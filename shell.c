@@ -7,6 +7,7 @@
 #include <sys/wait.h>
 
 #define MAXH 2000
+#define MAXSHOW 200
 #define MAXL 500
 #define MAXARG 100
 #define COMMAND_FAILED "Command execution failed, exiting."
@@ -17,13 +18,15 @@ int hisc = 0;
 
 int main()
 {
-	char line[MAXL];
+	char *line;
 	char history[MAXH][MAXL];
 	char *argv[MAXARG];
 	int len;
 	while (1) {
 		fflush(NULL);
 		printf("shell.c$ ");
+		if (line) free(line);
+		line = (char *)malloc(sizeof(char) * MAXL + 1);
 		if (fgets(line, MAXL, stdin)) { // wait for user to input
 			strcpy(line, trim(line)); // trim the input
 			if ((len = strlen(line)) == 0) continue;
