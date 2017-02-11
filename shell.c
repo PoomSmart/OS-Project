@@ -45,11 +45,11 @@ int main()
 					// retrieve n-th history command line by !n
 					line++;
 					i = atoi(line);
-					if (i > hisc) {
-						puts("Command at this line not found in the history.");
+					line--;
+					if (i <= 0 || i > hisc) {
+						puts("Invalid command line for history.");
 						continue;
 					}
-					line--;
 					strcpy(line, history[i - 1]);
 				}
 			}
