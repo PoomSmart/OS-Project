@@ -1,0 +1,25 @@
+[Members]
+1. Thitiwut Chamornmarn 5888010
+2. Patipon Suwanbol 5888218
+3. Thatchapon Unprasert 5888220
+
+["Unfair" sub-works division]
+	Everyone can do almost every part, but has to break down and distribute equally. For your information, following the project statement, points may be unequally given.
+
+Thitiwut took care of:
+	- Read string line by line
+	- Remove leading and trailing spaces for each line
+	- Divide line into tokens using strtok() for uses in execvp()
+	- fork() and exec() programmatic concept
+	
+Patipon took care of:
+	- Implement history feature
+	- history array shifting when full
+	- checking if string is number or not
+	- Implement exit feature
+	
+Thatchapon took care of:
+	- Exit shell when command failed to execute
+	- Implement !n and !!
+	- Refactoring and optimization
+	- Makefile
