@@ -3,8 +3,8 @@
 2. Patipon Suwanbol 5888218
 3. Thatchapon Unprasert 5888220
 
-["Unfair" sub-works division]
-	Everyone can do almost every part, but has to break down and distribute equally. For your information, following the project statement, points may be unequally given.
+[Sub-works Division]
+	Based on the convention.
 
 Thitiwut took care of:
 	- Read string line by line
