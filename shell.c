@@ -30,8 +30,13 @@ int main()
 		if (fgets(line, MAXL, stdin)) { // wait for user to input
 			strcpy(line, trim(line)); // trim the input
 			if ((len = strlen(line)) == 0) continue;
-			if (strcmp(line, "!!") == 0)
+			if (strcmp(line, "!!") == 0) {
+				if (hisc == 0) {
+					puts("Error, empty history.");
+					continue;
+				}
 				strcpy(line, history[hisc - 1]);
+			}
 			if (len > 1 && *line == '!') {
 				int i = 1;
 				// every letter after ! must be a digit
