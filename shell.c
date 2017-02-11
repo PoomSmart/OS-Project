@@ -95,9 +95,8 @@ char *trim(char *s) // remove unnecessary spaces
 {
 	size_t size = strlen(s);
 	if (!size) return s;
-	if (s[size - 1] == '\n') s[size - 1] = '\0';
 	char *end = s + size - 1;
-	while (end >= s && isspace(*end))
+	while (end >= s && (*end == '\n' || isspace(*end)))
 		end--; // remove trailing space
 	*(end + 1) = '\0';
 	while (*s && isspace(*s))
