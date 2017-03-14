@@ -119,7 +119,7 @@ job *toJob(process *p)
 job *createJobs(process list[], int t)
 {
 	int amount, base_arrival, njobs = 0;
-	job *jobs = (job *)malloc(sizeof(job) * maxjobs);
+	job *jobs = (job *)malloc(sizeof(job) * t);
 	for (int i = 0; i < t; i++) {
 		amount = list[i].burst;
 		base_arrival = list[i].arrival;
@@ -134,7 +134,7 @@ job *createJobs(process list[], int t)
 void calculate(process list[], int t)
 {
 	job *jobs = createJobs(list, t);
-	for (int i = 0; i < maxjobs; i++)
+	for (int i = 0; i < t; i++)
 		enqueue(&jobs[i]);
 	// calculating metrics for each process, here worry nothing about time slice
 	while (!isEmpty()) {
@@ -232,7 +232,7 @@ int main(int argc, char *argv[]) {
 	} else if (qt = atoi(argv[2])) {
 		qsort(list, t, sizeof(process), (comp)cmpproc);
 		int k = 1;
-		enqueue(toJob(&list[0]), false);
+		enqueue(toJob(&list[0]));
 		while (!isEmpty()) {
 			job *j = dequeue();
 			if (!j->p->firstrun) {
