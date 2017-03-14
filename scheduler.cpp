@@ -49,7 +49,8 @@ int cmpjob(job *ja, job *jb)
 {
 	int c = ja->start - jb->start;
 	if (!c) {
-		c = ja->p->arrival - jb->p->arrival;
+		if (ja->start == jb->start)
+			c = ja->p->arrival - jb->p->arrival;
 		if (!c) {
 			c = ja->priority - jb->priority;
 			if (!c)
@@ -64,6 +65,8 @@ int cmplast(process *pa, process *pb)
 	int c = pa->lastrun - pb->lastrun;
 	return c ? c / abs(c) : 0;
 }
+
+int min(int a, int b) { return a < b ? a : b; }
 
 double avg_response = 0, avg_waiting = 0, avg_turnaround = 0;
 int response, waiting, turnaround, qt;
@@ -138,6 +141,14 @@ void print(process list[], size_t t)
 {
 	for (int i = 0; i < t; i++)
 		printf("%d %d %d %d\n", list[i].pid, list[i].burst, list[i].arrival, list[i].priority);
+}
+
+job *toJob(process *p)
+{
+	job *j = (job *)malloc(sizeof(job));
+	j->length = p->burst;
+	j->p = p;
+	return j;
 }
 
 job *createJobs(process list[], int t, int maxjobs, bool rr)
@@ -278,9 +289,34 @@ int main(int argc, char *argv[]) {
 		}
 	} else if (qt = atoi(argv[2])) {
 		qsort(list, t, sizeof(process), (comp)cmpproc);
-		for (i = 0; i < t; i++)
+		/*for (i = 0; i < t; i++)
 			numjobs += (int)ceil((double)list[i].burst / qt);
-		calculate(list, NULL, t, true, true, false, numjobs);
+		calculate(list, NULL, t, true, true, false, numjobs);*/
+		int bound, k = 1;
+		enqueue(toJob(&list[0]), false);
+		while (!isEmpty()) {
+			job *j = dequeue();
+			if (!j->p->firstrun) {
+				j->p->response = ct - j->p->arrival;
+				j->p->lastrun = -1;
+				j->p->firstrun = 1;
+			}
+			if (j->p->lastrun != -1)
+				j->p->waiting += ct - j->p->lastrun;
+			else
+				j->p->waiting = ct - j->p->arrival;
+			bound = ct + min(qt, j->length);
+			while (k < t && list[k].arrival < bound)
+				enqueue(toJob(&list[k++]), false);
+			if (j->length > qt) {
+				job *jb = toJob(j->p);
+				jb->length = j->length - qt;
+				enqueue(jb, false);
+			}
+			ct += min(qt, j->length);
+			j->p->lastrun = ct;
+			j->p->turnaround = ct - j->p->arrival;
+		}
 	} else {
 		perror("Unrecognized or incompatible arguments");
 		exit(EXIT_FAILURE);
