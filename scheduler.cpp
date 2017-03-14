@@ -5,8 +5,6 @@
 #include <ctype.h>
 #include <string.h>
 
-#define MAXJOBS 300
-
 typedef struct process {
 	int pid;
 	int burst;
@@ -41,20 +39,6 @@ int cmpproc(process *pa, process *pb)
 		c = pa->priority - pb->priority;
 		if (!c)
 			c = pa->burst - pb->burst;
-	}
-	return c ? c / abs(c) : 0;
-}
-
-int cmpjob(job *ja, job *jb)
-{
-	int c = ja->start - jb->start;
-	if (!c) {
-		c = ja->p->arrival - jb->p->arrival;
-		if (!c) {
-			c = ja->priority - jb->priority;
-			if (!c)
-				c = ja->length - jb->length;
-		}
 	}
 	return c ? c / abs(c) : 0;
 }
