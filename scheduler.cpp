@@ -140,6 +140,8 @@ void calculate(process list[], int t)
 	while (!isEmpty()) {
 		job *jb = dequeue();
 		process *p = jb->p;
+		if (ct < p->arrival)
+			ct = p->arrival;
 		if (!p->firstrun) {
 			p->firstrun = 1;
 			p->lastrun = -1;
@@ -185,6 +187,8 @@ int main(int argc, char *argv[]) {
 			ct += p->burst;
 			p->turnaround = ct - p->arrival;
 			p->lastrun = ct;
+			if (i + 1 < t && ct < list[i + 1].arrival)
+				ct = list[i + 1].arrival;
 		}
 	} else if (!strcmp(argv[2], "SJF")) {
 		qsort(list, t, sizeof(process), (comp)cmpproc);
