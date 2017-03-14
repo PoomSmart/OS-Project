@@ -49,10 +49,19 @@ int cmpjob(job *ja, job *jb)
 {
 	int c = ja->start - jb->start;
 	if (!c) {
-		c = ja->priority - jb->priority;
-		if (!c)
-			c = ja->length - jb->length;
+		c = ja->p->arrival - jb->p->arrival;
+		if (!c) {
+			c = ja->priority - jb->priority;
+			if (!c)
+				c = ja->length - jb->length;
+		}
 	}
+	return c ? c / abs(c) : 0;
+}
+
+int cmplast(process *pa, process *pb)
+{
+	int c = pa->lastrun - pb->lastrun;
 	return c ? c / abs(c) : 0;
 }
 
@@ -97,12 +106,12 @@ void enqueue(job *j, bool priority)
 			tail = n;
 		}
 	}
-	/*node *read = head;
+	node *read = head;
 	while (read) {
 		printf("(s%d, L%d, p%d)->", read->j->start, read->j->length, read->j->p->pid);
 		read = read->next;
 	}
-	printf("\n");*/
+	printf("\n");
 }
 
 bool isEmpty()
@@ -208,7 +217,7 @@ int main(int argc, char *argv[]) {
 	process list[t];
 	int minarrival = 999;
 	while (i < t && fscanf(f, "%d %d %d %d", &list[i].pid, &list[i].burst, &list[i].arrival, &list[i].priority)) {
-		list[i].response = list[i].waiting = list[i].turnaround = list[i].firstrun = 0;
+		list[i].waiting = list[i].turnaround = list[i].firstrun = 0;
 		if (list[i].arrival < minarrival)
 			minarrival = list[i].arrival;
 		i++;
@@ -222,6 +231,7 @@ int main(int argc, char *argv[]) {
 			p->response = p->waiting = ct - p->arrival;
 			ct += p->burst;
 			p->turnaround = ct - p->arrival;
+			p->lastrun = ct;
 		}
 	} else if (!strcmp(argv[2], "SJF")) {
 		qsort(list, t, sizeof(process), (comp)cmpproc);
@@ -263,6 +273,7 @@ int main(int argc, char *argv[]) {
 				end = ct + 1;
 				list[smallest].waiting = end - list[smallest].arrival - list[smallest].burst;
 				list[smallest].turnaround = end - list[smallest].arrival;
+				list[smallest].lastrun = end;
 			}
 		}
 	} else if (qt = atoi(argv[2])) {
@@ -274,6 +285,7 @@ int main(int argc, char *argv[]) {
 		perror("Unrecognized or incompatible arguments");
 		exit(EXIT_FAILURE);
 	}
+	qsort(list, t, sizeof(process), (comp)cmplast);
 	for (i = 0; i < t; i++) {
 		printf("%d %d %d\n", response = list[i].response, waiting = list[i].waiting, turnaround = list[i].turnaround);
 		avg_response += response;
@@ -285,7 +297,7 @@ int main(int argc, char *argv[]) {
 	avg_turnaround /= t;
 	// per-process: response + waiting + turnaround
 	// final: throughput + av.response + av.waiting + av.turnaround (%.2lf)
-	printf("%.2lf %.2lf %.2lf %.2lf\n", (double)t / ct, avg_response, avg_waiting, avg_turnaround);
+	printf("%.2lf %.2lf %.2lf %.2lf\n", (double)t / (ct + minarrival), avg_response, avg_waiting, avg_turnaround);
 	fclose(f);
 	return EXIT_SUCCESS;
 }
