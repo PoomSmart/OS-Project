@@ -49,8 +49,7 @@ int cmpjob(job *ja, job *jb)
 {
 	int c = ja->start - jb->start;
 	if (!c) {
-		if (ja->start == jb->start)
-			c = ja->p->arrival - jb->p->arrival;
+		c = ja->p->arrival - jb->p->arrival;
 		if (!c) {
 			c = ja->priority - jb->priority;
 			if (!c)
@@ -75,7 +74,7 @@ int numjobs = 0, ct = 0;
 // process queue
 node *head = NULL, *tail = NULL;
 
-void enqueue(job *j, bool priority)
+void enqueue(job *j)
 {
 	node *n = (node *)malloc(sizeof(node));
 	n->j = j;
@@ -83,38 +82,10 @@ void enqueue(job *j, bool priority)
 	if (head == NULL)
 		head = tail = n;
 	else {
-		if (priority) {
-			node *read = head;
-			if (cmpjob(j, head->j) == -1) {
-				head->prev = n;
-				n->next = head;
-				head = n;
-			} else {
-				while (read->next && cmpjob(j, read->j) >= 0)
-					read = read->next;
-				if (read->next == NULL && cmpjob(j, read->j) >= 0) {
-					tail->next = n;
-					n->prev = tail;
-					tail = n;
-				} else {
-					read->prev->next = n;
-					n->prev = read->prev;
-					n->next = read;
-					read->prev = n;
-				}
-			}
-		} else {
-			tail->next = n;
-			n->prev = tail;
-			tail = n;
-		}
+		tail->next = n;
+		n->prev = tail;
+		tail = n;
 	}
-	node *read = head;
-	while (read) {
-		printf("(s%d, L%d, p%d)->", read->j->start, read->j->length, read->j->p->pid);
-		read = read->next;
-	}
-	printf("\n");
 }
 
 bool isEmpty()
@@ -137,12 +108,6 @@ job *dequeue()
 	return j;
 }
 
-void print(process list[], size_t t)
-{
-	for (int i = 0; i < t; i++)
-		printf("%d %d %d %d\n", list[i].pid, list[i].burst, list[i].arrival, list[i].priority);
-}
-
 job *toJob(process *p)
 {
 	job *j = (job *)malloc(sizeof(job));
@@ -151,49 +116,26 @@ job *toJob(process *p)
 	return j;
 }
 
-job *createJobs(process list[], int t, int maxjobs, bool rr)
+job *createJobs(process list[], int t)
 {
 	int amount, base_arrival, njobs = 0;
 	job *jobs = (job *)malloc(sizeof(job) * maxjobs);
 	for (int i = 0; i < t; i++) {
 		amount = list[i].burst;
 		base_arrival = list[i].arrival;
-		job *jb;
-		if (rr) {
-			while (amount - qt >= 0) {
-				jb = (job *)malloc(sizeof(job));
-				jb->length = qt;
-				jb->start = base_arrival;
-				jb->p = &list[i];
-				base_arrival += qt;
-				jobs[njobs++] = *jb;
-				amount -= qt;
-			}
-			if (amount) {
-				jb = (job *)malloc(sizeof(job));
-				jb->length = amount;
-				jb->start = base_arrival;
-				jb->p = &list[i];
-				jobs[njobs++] = *jb;
-			}
-		} else {
-			jb = (job *)malloc(sizeof(job));
-			jb->length = amount;
-			jb->start = base_arrival;
-			jb->p = &list[i];
-			jobs[njobs++] = *jb;
-		}
+		job *jb = toJob(&list[i]);
+		jb->length = amount;
+		jb->start = base_arrival;
+		jobs[njobs++] = *jb;
 	}
 	return (job *)jobs;
 }
 
-void calculate(process list[], job *cjobs, int t, bool rr, bool postsort, bool preemptive, int maxjobs)
+void calculate(process list[], int t)
 {
-	job *jobs = cjobs ? cjobs : createJobs(list, t, maxjobs, rr);
-	if (postsort)
-		qsort(jobs, maxjobs, sizeof(job), (comp)cmpjob);
+	job *jobs = createJobs(list, t);
 	for (int i = 0; i < maxjobs; i++)
-		enqueue(&jobs[i], preemptive);
+		enqueue(&jobs[i]);
 	// calculating metrics for each process, here worry nothing about time slice
 	while (!isEmpty()) {
 		job *jb = dequeue();
@@ -252,7 +194,7 @@ int main(int argc, char *argv[]) {
 			min = list[k].burst;
 			// find the shortest job coming within burst period of currently-running process
 			for (i = j + 1; i < t; i++) {
-				if (ct >= list[i].arrival && list[i].burst < min && list[i].priority < list[k].priority) {
+				if (ct >= list[i].arrival && list[i].burst < min) {
 					process temp = list[k];
 					list[k] = list[i];
 					list[i] = temp;
@@ -261,7 +203,7 @@ int main(int argc, char *argv[]) {
 			k++;
 		}
 		ct = 0;
-		calculate(list, NULL, t, false, false, false, t);
+		calculate(list, t);
 	} else if (!strcmp(argv[2], "SJFW")) {
 		// preemptive SJF
 		int end, smallest, count = 0;
@@ -289,10 +231,7 @@ int main(int argc, char *argv[]) {
 		}
 	} else if (qt = atoi(argv[2])) {
 		qsort(list, t, sizeof(process), (comp)cmpproc);
-		/*for (i = 0; i < t; i++)
-			numjobs += (int)ceil((double)list[i].burst / qt);
-		calculate(list, NULL, t, true, true, false, numjobs);*/
-		int bound, k = 1;
+		int k = 1;
 		enqueue(toJob(&list[0]), false);
 		while (!isEmpty()) {
 			job *j = dequeue();
@@ -305,17 +244,21 @@ int main(int argc, char *argv[]) {
 				j->p->waiting += ct - j->p->lastrun;
 			else
 				j->p->waiting = ct - j->p->arrival;
-			bound = ct + min(qt, j->length);
-			while (k < t && list[k].arrival < bound)
-				enqueue(toJob(&list[k++]), false);
+			ct += min(qt, j->length);
+			while (k < t && list[k].arrival < ct)
+				enqueue(toJob(&list[k++]));
 			if (j->length > qt) {
 				job *jb = toJob(j->p);
 				jb->length = j->length - qt;
-				enqueue(jb, false);
+				enqueue(jb);
 			}
-			ct += min(qt, j->length);
 			j->p->lastrun = ct;
 			j->p->turnaround = ct - j->p->arrival;
+			if (isEmpty() && k < t) { // skip interval of zero job
+				job *jb = toJob(&list[k++]);
+				enqueue(jb);
+				ct = jb->p->arrival;
+			}
 		}
 	} else {
 		perror("Unrecognized or incompatible arguments");
